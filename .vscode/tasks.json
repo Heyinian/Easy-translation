@@ -1,0 +1,15 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "运行源码版 TranslatorApp",
+			"type": "shell",
+			"command": "c:/Users/10724/Desktop/max/translator_app/.venv312/Scripts/python.exe",
+			"args": [
+				"app.py"
+			],
+			"isBackground": true,
+			"group": "build"
+		}
+	]
+}

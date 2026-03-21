@@ -1,0 +1,30 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environments
+.venv/
+.venv312/
+venv/
+
+# Build outputs
+build/
+dist/
+*.spec.bak
+
+# Local runtime files
+logs/
+screenshots/
+
+# Local secrets and machine-specific settings
+.settings.key
+user_settings.json
+
+# IDE files
+.vscode/*
+!.vscode/tasks.json
+
+# OS files
+Thumbs.db
+.DS_Store
