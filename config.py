@@ -13,6 +13,7 @@ ASSETS_DIR = PROJECT_ROOT / 'assets'
 # 应用基础信息
 APP_NAME = 'Easy-translation'
 APP_ID = 'EasyTranslation.EasyTranslation'
+APP_INSTANCE_KEY = 'EasyTranslation.SingleInstance'
 APP_ICON_PATH = ASSETS_DIR / 'easy-translation.ico'
 APP_ICON_FALLBACK_PATH = ASSETS_DIR / 'easy-translation.png'
 

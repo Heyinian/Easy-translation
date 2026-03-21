@@ -23,6 +23,7 @@ _configure_qt_dll_path()
 import config
 from PyQt6.QtCore import QEvent, QObject, QThread, QTimer, pyqtSignal
 from PyQt6.QtGui import QAction, QIcon
+from PyQt6.QtNetwork import QLocalServer, QLocalSocket
 from PyQt6.QtWidgets import (
     QApplication, QCheckBox, QComboBox, QDialog, QDialogButtonBox,
     QFormLayout, QHBoxLayout, QLabel, QLineEdit,
@@ -35,6 +36,7 @@ from config import (
     APP_ICON_FALLBACK_PATH,
     APP_ICON_PATH,
     APP_ID,
+    APP_INSTANCE_KEY,
     APP_NAME,
     LANGUAGE_PAIRS,
     SMART_TARGET_LABEL,
@@ -388,6 +390,66 @@ class TranslationWorker(QObject):
                 
         except Exception as e:
             self.error_occurred.emit(f"出错: {str(e)}")
+
+
+class SingleInstanceManager(QObject):
+    """确保应用只保留一个运行实例。"""
+
+    activate_requested = pyqtSignal()
+
+    def __init__(self, server_name: str):
+        super().__init__()
+        self.server_name = server_name
+        self.server = None
+        self._is_primary_instance = False
+
+    def start(self) -> bool:
+        """尝试注册主实例；如果已有实例，则通知其显示窗口。"""
+        socket = QLocalSocket(self)
+        socket.connectToServer(self.server_name)
+        if socket.waitForConnected(300):
+            self._notify_existing_instance(socket)
+            return False
+
+        QLocalServer.removeServer(self.server_name)
+        self.server = QLocalServer(self)
+        if not self.server.listen(self.server_name):
+            return False
+
+        self.server.newConnection.connect(self._handle_new_connection)
+        self._is_primary_instance = True
+        return True
+
+    def _notify_existing_instance(self, socket: QLocalSocket):
+        socket.write(b'SHOW')
+        socket.flush()
+        socket.waitForBytesWritten(300)
+        socket.disconnectFromServer()
+
+    def _handle_new_connection(self):
+        if not self.server:
+            return
+
+        while self.server.hasPendingConnections():
+            socket = self.server.nextPendingConnection()
+            if socket is None:
+                continue
+
+            socket.readyRead.connect(
+                lambda connection=socket: self._read_activation_request(connection)
+            )
+            socket.disconnected.connect(socket.deleteLater)
+
+    def _read_activation_request(self, socket: QLocalSocket):
+        payload = bytes(socket.readAll()).decode('utf-8', errors='ignore').strip().upper()
+        if payload == 'SHOW':
+            self.activate_requested.emit()
+        socket.disconnectFromServer()
+
+    def cleanup(self):
+        if self.server and self._is_primary_instance:
+            self.server.close()
+            QLocalServer.removeServer(self.server_name)
 
 
 class MainWindow(QMainWindow):
@@ -966,7 +1028,14 @@ def main():
     app_icon = load_app_icon()
     if not app_icon.isNull():
         app.setWindowIcon(app_icon)
+
+    single_instance = SingleInstanceManager(APP_INSTANCE_KEY)
+    if not single_instance.start():
+        return 0
+
     window = MainWindow()
+    single_instance.activate_requested.connect(window.show_window)
+    app.aboutToQuit.connect(single_instance.cleanup)
     window.show()
     sys.exit(app.exec())
 
