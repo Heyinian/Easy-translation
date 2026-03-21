@@ -2,11 +2,11 @@
 
 ## Title
 
-Easy-translation Windows Build
+Easy-translation v0.5.1
 
 ## Suggested Tag
 
-v0.5.0
+v0.5.1
 
 ## Summary
 
