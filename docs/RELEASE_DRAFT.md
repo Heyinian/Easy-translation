@@ -36,4 +36,4 @@ This release provides a ready-to-use Windows executable for Easy-translation.
 
 ## SHA256
 
-- `Easy-translation.exe`: `5C929ED08F0CFD504DF50B008675994687F731ECE800468AB1831AC006056648`
+- `Easy-translation.exe`: `051A737A9EB48E403725944DFC36CBFA5F20A875DE549E4AAC8D0E215C071FDA`
