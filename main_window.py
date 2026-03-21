@@ -1,6 +1,7 @@
 """
 主应用窗口 - PyQt6 UI
 """
+import ctypes
 import os
 import sys
 import time
@@ -20,17 +21,21 @@ def _configure_qt_dll_path():
 _configure_qt_dll_path()
 
 import config
-from PyQt6.QtCore import QObject, QThread, pyqtSignal
-from PyQt6.QtGui import QAction
+from PyQt6.QtCore import QEvent, QObject, QThread, QTimer, pyqtSignal
+from PyQt6.QtGui import QAction, QIcon
 from PyQt6.QtWidgets import (
     QApplication, QCheckBox, QComboBox, QDialog, QDialogButtonBox,
-    QFormLayout, QHBoxLayout, QLabel, QLineEdit, QListWidget, QListWidgetItem,
+    QFormLayout, QHBoxLayout, QLabel, QLineEdit,
     QMainWindow, QMenu, QMessageBox, QPushButton, QSystemTrayIcon, QTextEdit,
     QVBoxLayout, QWidget
 )
 from pynput.keyboard import Controller as KeyboardController, Key
 
 from config import (
+    APP_ICON_FALLBACK_PATH,
+    APP_ICON_PATH,
+    APP_ID,
+    APP_NAME,
     LANGUAGE_PAIRS,
     SMART_TARGET_LABEL,
     SMART_TARGET_LANG,
@@ -49,12 +54,33 @@ from translator_core import TranslatorCore
 TRIPLE_SPACE_TRIGGER = 'triple_space'
 
 
+def load_app_icon() -> QIcon:
+    """加载应用图标，优先使用 ICO，不存在时回退 PNG。"""
+    for icon_path in (APP_ICON_PATH, APP_ICON_FALLBACK_PATH):
+        if Path(icon_path).exists():
+            return QIcon(str(icon_path))
+    return QIcon()
+
+
+def set_windows_app_id():
+    """设置 Windows AppUserModelID，确保任务栏图标和名称稳定。"""
+    if os.name != 'nt':
+        return
+
+    try:
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(APP_ID)
+    except Exception:
+        pass
+
+
 class SettingsDialog(QDialog):
     """应用设置对话框。"""
 
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle('设置')
+        if parent is not None and hasattr(parent, 'app_icon') and not parent.app_icon.isNull():
+            self.setWindowIcon(parent.app_icon)
         self.setMinimumWidth(520)
         self.settings = settings_manager.get_all_settings()
         self._init_ui()
@@ -131,9 +157,6 @@ class SettingsDialog(QDialog):
         self.ollama_timeout_input = QLineEdit(str(ollama_settings.get('timeout', 20)))
         form_layout.addRow('Ollama 超时(秒):', self.ollama_timeout_input)
 
-        self.ollama_candidate_count_input = QLineEdit(str(ollama_settings.get('candidate_count', 3)))
-        form_layout.addRow('Ollama 候选数:', self.ollama_candidate_count_input)
-
         self.ollama_test_btn = QPushButton('测试 Ollama 配置')
         self.ollama_test_btn.clicked.connect(lambda: self.test_provider_settings('ollama'))
         form_layout.addRow('', self.ollama_test_btn)
@@ -179,14 +202,13 @@ class SettingsDialog(QDialog):
         settings['source_lang'] = self.source_lang_combo.currentData()
         settings['target_lang'] = self.target_lang_combo.currentData()
         settings['ocr_language'] = self.ocr_lang_input.text().strip() or 'chi_sim+eng'
-        settings['tesseract_path'] = self.tesseract_path_input.text().strip() or settings.get('tesseract_path', '')
+        settings['tesseract_path'] = self.tesseract_path_input.text().strip()
         settings['auto_clipboard_monitor'] = settings.get('auto_clipboard_monitor', True)
         settings['translate_input_time_window'] = self._parse_time_window(self.translate_input_window_input.text().strip())
         settings.setdefault('provider_settings', {})['ollama'] = {
             'base_url': self.ollama_base_url_input.text().strip() or 'http://127.0.0.1:11434',
             'model': self.ollama_model_input.text().strip() or 'qwen2.5:7b',
             'timeout': self._parse_timeout(self.ollama_timeout_input.text().strip()),
-            'candidate_count': self._parse_candidate_count(self.ollama_candidate_count_input.text().strip()),
         }
         settings['hotkeys'] = {
             'screenshot': self.hotkey_screenshot_input.text().strip() or 'alt+shift+s',
@@ -210,12 +232,6 @@ class SettingsDialog(QDialog):
             return max(1, int(value))
         except (TypeError, ValueError):
             return 20
-
-    def _parse_candidate_count(self, value: str) -> int:
-        try:
-            return max(1, int(value))
-        except (TypeError, ValueError):
-            return 3
 
     def _parse_time_window(self, value: str) -> float:
         try:
@@ -260,7 +276,6 @@ class SettingsDialog(QDialog):
             'base_url': self.ollama_base_url_input.text().strip(),
             'model': self.ollama_model_input.text().strip(),
             'timeout': self._parse_timeout(self.ollama_timeout_input.text().strip()),
-            'candidate_count': self._parse_candidate_count(self.ollama_candidate_count_input.text().strip()),
         }
 
         if not settings_manager.validate_provider_settings(provider, provider_settings):
@@ -315,10 +330,6 @@ class SettingsDialog(QDialog):
 
         if not settings_manager.validate_translate_input_time_window(settings.get('translate_input_time_window', 1.0)):
             return '三击空格窗口期必须在 0.3 到 3.0 秒之间'
-
-        tesseract_path = settings.get('tesseract_path', '').strip()
-        if tesseract_path and not os.path.exists(tesseract_path):
-            return 'Tesseract 路径不存在，请检查安装路径或留空后使用默认路径'
 
         return None
 
@@ -408,7 +419,9 @@ class MainWindow(QMainWindow):
         self._clipboard_capture_in_progress = False
         self._pending_external_replace = False
         self._pending_clipboard_restore = None
-        self.current_translation_candidates = []
+        self.app_icon = load_app_icon()
+        self._is_quitting = False
+        self._tray_background_tip_shown = False
         
         self.init_ui()
         self.apply_runtime_settings_to_ui()
@@ -418,6 +431,8 @@ class MainWindow(QMainWindow):
     def init_ui(self):
         """初始化UI"""
         self.setWindowTitle(WINDOW_TITLE)
+        if not self.app_icon.isNull():
+            self.setWindowIcon(self.app_icon)
         self.setGeometry(100, 100, WINDOW_WIDTH, WINDOW_HEIGHT)
         
         # 中央窗口
@@ -477,15 +492,6 @@ class MainWindow(QMainWindow):
         self.output_text.setMinimumHeight(100)
         main_layout.addWidget(self.output_text)
 
-        self.candidate_label = QLabel('候选译文:')
-        self.candidate_label.hide()
-        main_layout.addWidget(self.candidate_label)
-
-        self.candidate_list = QListWidget()
-        self.candidate_list.hide()
-        self.candidate_list.itemClicked.connect(self.on_candidate_selected)
-        main_layout.addWidget(self.candidate_list)
-
         self.status_label = QLabel('当前翻译源: Google Translate')
         main_layout.addWidget(self.status_label)
         
@@ -528,20 +534,32 @@ class MainWindow(QMainWindow):
     def setup_tray(self):
         """设置系统托盘"""
         self.tray_icon = QSystemTrayIcon(self)
+        if not self.app_icon.isNull():
+            self.tray_icon.setIcon(self.app_icon)
+        self.tray_icon.setToolTip(f'{APP_NAME} - 后台运行中')
         
         tray_menu = QMenu()
+
+        status_action = QAction(f"{APP_NAME} 正在后台运行", self)
+        status_action.setEnabled(False)
+        tray_menu.addAction(status_action)
+        tray_menu.addSeparator()
         
-        show_action = QAction("显示", self)
-        show_action.triggered.connect(self.show)
+        show_action = QAction("打开主界面", self)
+        show_action.triggered.connect(self.show_window)
         tray_menu.addAction(show_action)
-        
-        hide_action = QAction("隐藏", self)
-        hide_action.triggered.connect(self.hide)
-        tray_menu.addAction(hide_action)
+
+        clipboard_action = QAction("翻译当前剪贴板", self)
+        clipboard_action.triggered.connect(self.on_clipboard_translate)
+        tray_menu.addAction(clipboard_action)
+
+        settings_action = QAction("设置", self)
+        settings_action.triggered.connect(self.open_settings_from_tray)
+        tray_menu.addAction(settings_action)
         
         tray_menu.addSeparator()
         
-        exit_action = QAction("退出", self)
+        exit_action = QAction("退出应用", self)
         exit_action.triggered.connect(self.quit_app)
         tray_menu.addAction(exit_action)
         
@@ -552,11 +570,28 @@ class MainWindow(QMainWindow):
     
     def tray_icon_activated(self, reason):
         """托盘图标被点击"""
-        if reason == QSystemTrayIcon.ActivationReason.DoubleClick:
-            if self.isVisible():
-                self.hide()
-            else:
-                self.show()
+        if reason in (
+            QSystemTrayIcon.ActivationReason.Trigger,
+            QSystemTrayIcon.ActivationReason.DoubleClick,
+        ):
+            self.show_window()
+
+    def _show_background_running_tip(self):
+        if self._tray_background_tip_shown or not self.tray_icon.isVisible():
+            return
+
+        self.tray_icon.showMessage(
+            APP_NAME,
+            '应用已切换到后台运行，可通过托盘图标打开主界面、设置或退出应用。',
+            QSystemTrayIcon.MessageIcon.Information,
+            3000,
+        )
+        self._tray_background_tip_shown = True
+
+    def minimize_to_tray(self):
+        """隐藏窗口并保留托盘图标。"""
+        self.hide()
+        self._show_background_running_tip()
     
     def setup_hotkeys(self):
         """设置全局快捷键"""
@@ -659,6 +694,11 @@ class MainWindow(QMainWindow):
         if not tesseract_ready:
             message += '\n当前 Tesseract 路径不可用，截图 OCR 功能暂不可用。'
         QMessageBox.information(self, '设置', message)
+
+    def open_settings_from_tray(self):
+        """从托盘打开主界面和设置。"""
+        self.show_window()
+        self.open_settings_dialog()
     
     def start_monitors(self):
         """启动监听器"""
@@ -676,7 +716,6 @@ class MainWindow(QMainWindow):
             return
 
         self._pending_external_replace = replace_active_input
-        self._clear_candidates()
         
         source_lang = self.source_lang_combo.currentData()
         target_lang = self.target_lang_combo.currentData()
@@ -708,55 +747,18 @@ class MainWindow(QMainWindow):
     def on_translation_result(self, result):
         """翻译完成"""
         primary_result = result.get('primary', '') if isinstance(result, dict) else str(result)
-        candidates = result.get('candidates', []) if isinstance(result, dict) else [primary_result]
 
         self.output_text.setText(primary_result)
-        self._set_candidates(candidates, primary_result)
         if self._pending_external_replace:
             self.replace_text_in_active_input(primary_result)
             self._pending_external_replace = False
     
     def on_translation_error(self, error):
         """翻译出错"""
-        self._clear_candidates()
         self.output_text.setText(f"❌ {error}")
         if self._pending_external_replace:
             self.show_window()
             self._pending_external_replace = False
-
-    def _set_candidates(self, candidates, primary_result):
-        normalized_candidates = []
-        for candidate in candidates or []:
-            text = str(candidate).strip()
-            if text and text not in normalized_candidates:
-                normalized_candidates.append(text)
-
-        if not normalized_candidates:
-            self._clear_candidates()
-            return
-
-        self.current_translation_candidates = normalized_candidates
-        self.candidate_list.clear()
-        for index, candidate in enumerate(normalized_candidates, start=1):
-            prefix = '当前结果' if candidate == primary_result else f'候选 {index}'
-            item = QListWidgetItem(f'{prefix}: {candidate}')
-            item.setData(256, candidate)
-            self.candidate_list.addItem(item)
-
-        self.candidate_label.show()
-        self.candidate_list.show()
-
-    def _clear_candidates(self):
-        self.current_translation_candidates = []
-        self.candidate_list.clear()
-        self.candidate_label.hide()
-        self.candidate_list.hide()
-
-    def on_candidate_selected(self, item):
-        selected_text = item.data(256)
-        if not selected_text:
-            return
-        self.output_text.setText(selected_text)
     
     def on_screenshot_clicked(self):
         """截图翻译按钮被点击"""
@@ -889,9 +891,21 @@ class MainWindow(QMainWindow):
     
     def show_window(self):
         """显示窗口"""
-        self.show()
+        if self.isMinimized():
+            self.showNormal()
+        else:
+            self.show()
         self.raise_()
         self.activateWindow()
+
+    def changeEvent(self, event):
+        """最小化时切换到托盘后台运行。"""
+        super().changeEvent(event)
+        if self._is_quitting:
+            return
+
+        if event.type() == QEvent.Type.WindowStateChange and self.isMinimized():
+            QTimer.singleShot(0, self.minimize_to_tray)
     
     def clear_texts(self):
         """清空文本"""
@@ -919,22 +933,39 @@ class MainWindow(QMainWindow):
     
     def quit_app(self):
         """退出应用"""
+        self._is_quitting = True
         self._stop_translation_threads()
         self.hotkey_manager.stop()
         self.clipboard_monitor.stop()
         if self.triple_click_detector:
             self.triple_click_detector.stop()
-        sys.exit(0)
+        self.tray_icon.hide()
+        app = QApplication.instance()
+        if app is not None:
+            app.quit()
+        else:
+            sys.exit(0)
     
     def closeEvent(self, event):
         """窗口关闭事件"""
-        # 最小化到托盘而不是退出
-        self.hide()
+        if self._is_quitting:
+            event.accept()
+            return
+
+        # 关闭窗口时最小化到托盘而不是退出
+        self.minimize_to_tray()
         event.ignore()
 
 
 def main():
+    set_windows_app_id()
     app = QApplication(sys.argv)
+    app.setApplicationName(APP_NAME)
+    app.setApplicationDisplayName(APP_NAME)
+    app.setQuitOnLastWindowClosed(False)
+    app_icon = load_app_icon()
+    if not app_icon.isNull():
+        app.setWindowIcon(app_icon)
     window = MainWindow()
     window.show()
     sys.exit(app.exec())

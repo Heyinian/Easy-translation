@@ -15,7 +15,7 @@
 ## 1. 进入项目目录
 
 ```powershell
-cd C:\Users\10724\Desktop\max\translator_app
+cd <项目目录>\Easy-translation
 ```
 
 ## 2. 使用推荐环境启动
@@ -30,7 +30,7 @@ cd C:\Users\10724\Desktop\max\translator_app
 pip install -r requirements.txt
 ```
 
-## 4. 如果要使用截图 OCR
+## 4. 如果要使用截图 OCR（可选）
 
 安装 Tesseract：
 
@@ -42,13 +42,16 @@ pip install -r requirements.txt
 C:\Program Files\Tesseract-OCR\tesseract.exe
 ```
 
+未安装 Tesseract 不影响应用启动、设置保存和普通翻译功能。
+
 ## 5. 启动后优先验证
 
 1. 输入框手动翻译
 2. 剪贴板翻译
 3. 输入窗口翻译
-4. 三击空格触发
-5. 截图 OCR 翻译
+4. 关闭或最小化后是否能从托盘恢复
+5. 三击空格触发
+6. 截图 OCR 翻译（如需）
 
 ## 6. 当前默认触发方式
 

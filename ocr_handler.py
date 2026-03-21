@@ -4,6 +4,7 @@ OCR模块 - 处理截图和文字识别
 import importlib.util
 import os
 import pkgutil
+import shutil
 from datetime import datetime
 from typing import Optional
 
@@ -23,10 +24,21 @@ import pytesseract
 
 def configure_tesseract() -> bool:
     """根据当前配置更新 Tesseract 可执行文件路径。"""
-    tesseract_path = config.TESSERACT_PATH
-    if os.path.exists(tesseract_path):
-        pytesseract.pytesseract.pytesseract_cmd = tesseract_path
+    configured_path = str(config.TESSERACT_PATH).strip()
+    if configured_path and os.path.exists(configured_path):
+        pytesseract.pytesseract.pytesseract_cmd = configured_path
         return True
+
+    system_path = shutil.which('tesseract')
+    if system_path and os.path.exists(system_path):
+        pytesseract.pytesseract.pytesseract_cmd = system_path
+        return True
+
+    default_windows_path = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+    if os.path.exists(default_windows_path):
+        pytesseract.pytesseract.pytesseract_cmd = default_windows_path
+        return True
+
     return False
 
 

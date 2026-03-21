@@ -1,6 +1,6 @@
-# 翻译小助手
+# Easy-translation
 
-一个基于 PyQt6 的 Windows 桌面翻译工具，支持截图翻译、剪贴板翻译、输入窗口翻译、OCR 和多翻译源切换。
+一个基于 PyQt6 的 Windows 桌面翻译工具，支持截图翻译、剪贴板翻译、输入窗口翻译、可选 OCR 和多翻译源切换。
 
 当前版本：v0.4.0
 
@@ -23,9 +23,8 @@
 - 🌍 多语言翻译
 - 🔁 智能中英方向判断
 - 🤖 Ollama 本地 AI 翻译接入
-- 🧩 候选译文选择
 - 🔐 本地加密设置与密钥存储
-- 🎨 系统托盘运行
+- 🎨 系统托盘后台运行
 
 ## 已完成功能归档
 
@@ -34,7 +33,6 @@
 - 已完成截图 OCR 翻译
 - 已完成百度与腾讯翻译接入
 - 已完成 Ollama 本地 AI 翻译接入
-- 已完成候选译文展示与切换
 - 已完成智能中英方向判断
 - 已完成本地加密设置存储
 - 已完成外部输入框抓取与回填
@@ -75,16 +73,24 @@
 
 - 智能默认翻译方向
 - Ollama 配置项接入
-- 候选译文结果结构
-- UI 候选译文列表展示
+
+### Phase 5
+
+- 应用统一更名为 Easy-translation
+- 新增应用图标与 PyInstaller 打包图标接入
+- 关闭和最小化主窗口时切换到托盘后台运行
+- 托盘菜单支持打开主界面、设置、剪贴板翻译与退出应用
+- 候选译文功能移除，翻译结果统一为单结果输出
+- Tesseract 改为可选配置，未安装时仍可保存设置
 
 ## 项目结构
 
 ```
-translator_app/
+Easy-translation/
 ├── app.py                  # 主程序入口
 ├── main_window.py          # PyQt6主窗口UI
 ├── config.py               # 运行时配置和常量
+├── assets/                 # 应用图标资源
 ├── settings_manager.py     # 本地设置与密钥管理
 ├── translator_core.py      # 翻译核心引擎
 ├── ocr_handler.py          # OCR文字识别
@@ -109,7 +115,7 @@ translator_app/
 # 安装依赖
 pip install -r requirements.txt
 
-# 安装 Tesseract OCR（截图翻译需要）
+# 安装 Tesseract OCR（可选，仅截图翻译需要）
 ```
 
 Tesseract Windows 安装包：
@@ -124,7 +130,7 @@ Tesseract Windows 安装包：
 
 也可以在 VS Code 中直接运行任务：
 
-- 运行源码版 TranslatorApp
+- 运行源码版 Easy-translation
 
 更简化的启动步骤见：
 
@@ -140,11 +146,11 @@ Tesseract Windows 安装包：
 - 当前翻译源
 - 源语言 / 目标语言
 - OCR 语言包
-- Tesseract 路径
+- Tesseract 路径（可留空）
 - 剪贴板自动监听
 - 输入窗口翻译触发方式
 - 三击空格窗口期
-- Ollama 地址 / 模型 / 超时 / 候选数
+- Ollama 地址 / 模型 / 超时
 
 ## 输入窗口翻译
 
@@ -216,7 +222,7 @@ Tesseract Windows 安装包：
 ## 常见问题
 
 ### Q: 截图翻译无法识别文字？
-A: 检查 Tesseract 是否已安装，并确认设置页中的 Tesseract 路径有效。
+A: 检查 Tesseract 是否已安装；如果未安装，也不会影响其他设置保存和普通翻译功能。
 
 ### Q: 翻译返回错误？
 A: 检查网络连接和当前翻译源配置。百度、腾讯需要有效密钥，Ollama 需要本地服务。
@@ -237,4 +243,4 @@ MIT License
 
 ---
 
-提示：首次运行后应用会常驻托盘。如果窗口被隐藏，可用显示窗口热键调出主界面。
+提示：首次运行后应用会常驻托盘。关闭或最小化主窗口时会切换到后台运行，可通过托盘图标或显示窗口热键恢复主界面。

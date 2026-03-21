@@ -19,7 +19,7 @@ DEFAULT_SETTINGS = {
     'source_lang': 'auto',
     'target_lang': '__smart__',
     'ocr_language': 'chi_sim+eng',
-    'tesseract_path': r'C:\Program Files\Tesseract-OCR\tesseract.exe',
+    'tesseract_path': '',
     'auto_clipboard_monitor': True,
     'translate_input_time_window': 1.0,
     'api_keys': {
@@ -45,7 +45,6 @@ DEFAULT_SETTINGS = {
             'base_url': 'http://127.0.0.1:11434',
             'model': 'qwen2.5:7b',
             'timeout': 20,
-            'candidate_count': 3,
         },
     },
     'hotkeys': {
@@ -191,11 +190,7 @@ class SettingsManager:
         if provider == 'ollama':
             base_url = str(provider_settings.get('base_url', '')).strip()
             model = str(provider_settings.get('model', '')).strip()
-            try:
-                candidate_count = int(provider_settings.get('candidate_count', 3))
-            except (TypeError, ValueError):
-                return False
-            return bool(base_url and model and candidate_count >= 1)
+            return bool(base_url and model)
         return True
 
     def validate_translate_input_time_window(self, value: Any) -> bool:

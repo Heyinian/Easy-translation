@@ -8,6 +8,13 @@ from settings_manager import settings_manager
 
 # 项目根目录
 PROJECT_ROOT = Path(__file__).parent
+ASSETS_DIR = PROJECT_ROOT / 'assets'
+
+# 应用基础信息
+APP_NAME = 'Easy-translation'
+APP_ID = 'EasyTranslation.EasyTranslation'
+APP_ICON_PATH = ASSETS_DIR / 'easy-translation.ico'
+APP_ICON_FALLBACK_PATH = ASSETS_DIR / 'easy-translation.png'
 
 # 设置管理器
 SETTINGS_MANAGER = settings_manager
@@ -75,7 +82,7 @@ HOTKEYS = {
 # UI配置
 WINDOW_WIDTH = 600
 WINDOW_HEIGHT = 400
-WINDOW_TITLE = '翻译小助手'
+WINDOW_TITLE = APP_NAME
 
 # 日志配置
 LOG_DIR = PROJECT_ROOT / 'logs'

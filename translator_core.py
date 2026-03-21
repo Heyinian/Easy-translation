@@ -126,7 +126,6 @@ class TranslatorCore:
             cached_result = self.cache[cache_key]
             return {
                 'primary': cached_result,
-                'candidates': [cached_result],
                 'source_lang': source_lang,
                 'target_lang': target_lang,
             }
@@ -147,7 +146,6 @@ class TranslatorCore:
         if isinstance(result, str):
             result = {
                 'primary': result,
-                'candidates': [result],
                 'source_lang': source_lang,
                 'target_lang': target_lang,
             }
@@ -322,13 +320,11 @@ class TranslatorCore:
 
     def _translate_ollama_result(self, text: str, source_lang: str,
                                 target_lang: str) -> Optional[dict]:
-        """Ollama 本地 AI 翻译，返回主结果和候选结果。"""
+        """Ollama 本地 AI 翻译。"""
         provider_settings = get_provider_settings('ollama')
         base_url = provider_settings.get('base_url', 'http://127.0.0.1:11434').strip()
         model = provider_settings.get('model', '').strip()
         timeout_value = provider_settings.get('timeout', 20)
-        candidate_count = provider_settings.get('candidate_count', 3)
-
         if not base_url or not model:
             self._set_error('Ollama 需要先在设置中填写服务地址和模型名称')
             return None
@@ -337,17 +333,12 @@ class TranslatorCore:
             timeout = max(1, int(timeout_value))
         except (TypeError, ValueError):
             timeout = 20
-        try:
-            candidate_count = max(1, int(candidate_count))
-        except (TypeError, ValueError):
-            candidate_count = 3
-
         source_label = self._language_label(source_lang)
         target_label = self._language_label(target_lang)
         prompt = (
             f'你是专业翻译助手。请将下面文本从{source_label}翻译成{target_label}。'
-            f'请提供 {candidate_count} 个不同风格但都准确的译文候选。'
-            '输出 JSON，格式必须为 {"translations": ["译文1", "译文2"]}。'
+            '只返回一个准确、自然的最终译文。'
+            '输出 JSON，格式必须为 {"translation": "译文"}。'
             '不要输出解释，不要输出 JSON 之外的任何内容。\n\n'
             f'原文:\n{text}'
         )
@@ -371,11 +362,10 @@ class TranslatorCore:
             response.raise_for_status()
             data = response.json()
             response_text = str(data.get('response', '')).strip()
-            candidates = self._parse_ollama_candidates(response_text)
-            if candidates:
+            translated_text = self._parse_ollama_translation(response_text)
+            if translated_text:
                 return {
-                    'primary': candidates[0],
-                    'candidates': candidates,
+                    'primary': translated_text,
                     'source_lang': source_lang,
                     'target_lang': target_lang,
                 }
@@ -389,25 +379,19 @@ class TranslatorCore:
             self._set_error(f'Ollama 翻译出错: {error}')
             return None
 
-    def _parse_ollama_candidates(self, response_text: str) -> list[str]:
+    def _parse_ollama_translation(self, response_text: str) -> str:
         if not response_text:
-            return []
+            return ''
 
-        candidates = []
         try:
             data = json.loads(response_text)
-            translations = data.get('translations', [])
-            if isinstance(translations, list):
-                candidates = [str(item).strip() for item in translations if str(item).strip()]
+            translation = str(data.get('translation', '')).strip()
+            if translation:
+                return translation
         except json.JSONDecodeError:
-            lines = [line.strip('-* \n\r\t') for line in response_text.splitlines() if line.strip()]
-            candidates = [line for line in lines if line]
+            pass
 
-        unique_candidates = []
-        for candidate in candidates:
-            if candidate not in unique_candidates:
-                unique_candidates.append(candidate)
-        return unique_candidates
+        return response_text.strip('-* \n\r\t')
 
     def _language_label(self, language_code: str) -> str:
         language_map = {
