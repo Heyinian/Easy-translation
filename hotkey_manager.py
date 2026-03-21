@@ -1,12 +1,25 @@
 """
 快捷键和事件监听模块
 """
+from contextlib import contextmanager
+import logging
 import threading
 import time
 from typing import Callable, Dict, List, Tuple
 
+import config
 from pynput import keyboard
 from pynput.keyboard import Key, Listener
+
+
+TRIPLE_SPACE_LOGGER = logging.getLogger('easy_translation.triple_space')
+if not TRIPLE_SPACE_LOGGER.handlers:
+    handler = logging.FileHandler(config.LOG_DIR / 'triple_space.log', encoding='utf-8')
+    formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(message)s')
+    handler.setFormatter(formatter)
+    TRIPLE_SPACE_LOGGER.addHandler(handler)
+    TRIPLE_SPACE_LOGGER.setLevel(logging.INFO)
+    TRIPLE_SPACE_LOGGER.propagate = False
 
 
 SPECIAL_KEYS = {
@@ -22,6 +35,24 @@ SPECIAL_KEYS = {
 
 for index in range(1, 13):
     SPECIAL_KEYS[f'f{index}'] = {getattr(Key, f'f{index}')}
+
+
+IGNORED_RESET_KEYS = {
+    Key.shift,
+    Key.shift_l,
+    Key.shift_r,
+    Key.ctrl,
+    Key.ctrl_l,
+    Key.ctrl_r,
+    Key.alt,
+    Key.alt_l,
+    Key.alt_r,
+    Key.cmd,
+    Key.cmd_l,
+    Key.cmd_r,
+    Key.alt_gr,
+    Key.caps_lock,
+}
 
 class HotkeyManager:
     """全局快捷键管理器"""
@@ -129,14 +160,21 @@ class TripleClickDetector:
         self.click_times = []
         self.listener = None
         self.running = False
+        self.space_pressed = False
+        self._suppression_count = 0
+        self._suppression_lock = threading.Lock()
         
     def start(self):
         """启动检测器"""
         if not self.running:
             self.running = True
-            self.listener = Listener(on_press=self._on_key_press)
+            self.listener = Listener(
+                on_press=self._on_key_press,
+                on_release=self._on_key_release,
+            )
             self.listener.start()
             print("三击空格检测已启动")
+            TRIPLE_SPACE_LOGGER.info('TripleClickDetector started, time_window=%.2f', self.time_window)
     
     def stop(self):
         """停止检测器"""
@@ -144,11 +182,54 @@ class TripleClickDetector:
             self.running = False
             if self.listener:
                 self.listener.stop()
+            TRIPLE_SPACE_LOGGER.info('TripleClickDetector stopped')
+
+    @contextmanager
+    def suppress_detection(self, reason: str = 'internal_input'):
+        self.suspend(reason)
+        try:
+            yield
+        finally:
+            self.resume(reason)
+
+    def suspend(self, reason: str = 'internal_input'):
+        with self._suppression_lock:
+            self._suppression_count += 1
+            self.click_times = []
+            self.space_pressed = False
+            TRIPLE_SPACE_LOGGER.info(
+                'Triple-space detection suspended, reason=%s, depth=%d',
+                reason,
+                self._suppression_count,
+            )
+
+    def resume(self, reason: str = 'internal_input'):
+        with self._suppression_lock:
+            if self._suppression_count > 0:
+                self._suppression_count -= 1
+            TRIPLE_SPACE_LOGGER.info(
+                'Triple-space detection resumed, reason=%s, depth=%d',
+                reason,
+                self._suppression_count,
+            )
+
+    def _is_suppressed(self) -> bool:
+        with self._suppression_lock:
+            return self._suppression_count > 0
     
     def _on_key_press(self, key):
         """检测空格键按下"""
         try:
+            if self._is_suppressed():
+                TRIPLE_SPACE_LOGGER.info('Ignored key press while detection is suppressed: %r', key)
+                return
+
             if key == Key.space:
+                if self.space_pressed:
+                    TRIPLE_SPACE_LOGGER.info('Ignored repeated space press while key is held down')
+                    return
+
+                self.space_pressed = True
                 current_time = time.time()
                 
                 # 移除超出时间窗口的点击
@@ -158,12 +239,33 @@ class TripleClickDetector:
                 ]
                 
                 self.click_times.append(current_time)
+                TRIPLE_SPACE_LOGGER.info(
+                    'Space press detected, click_count=%d, recent_clicks=%s',
+                    len(self.click_times),
+                    [round(current_time - t, 3) for t in self.click_times],
+                )
                 
                 # 如果累计三次点击，触发回调
                 if len(self.click_times) >= 3:
                     self.click_times = []  # 重置
+                    TRIPLE_SPACE_LOGGER.info('Triple space detected, invoking callback')
                     threading.Thread(target=self.callback, daemon=True).start()
-                    
+            else:
+                if key in IGNORED_RESET_KEYS:
+                    TRIPLE_SPACE_LOGGER.info('Ignored non-space modifier key without resetting sequence: %r', key)
+                    return
+                self.click_times = []
+                TRIPLE_SPACE_LOGGER.info('Triple-space sequence reset by non-space key: %r', key)
+        except AttributeError:
+            pass
+
+    def _on_key_release(self, key):
+        try:
+            if self._is_suppressed():
+                return
+            if key == Key.space:
+                self.space_pressed = False
+                TRIPLE_SPACE_LOGGER.info('Space key released')
         except AttributeError:
             pass
 

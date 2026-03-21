@@ -2,6 +2,7 @@
 主应用窗口 - PyQt6 UI
 """
 import ctypes
+import logging
 import os
 import sys
 import time
@@ -54,6 +55,7 @@ from translator_core import TranslatorCore
 
 
 TRIPLE_SPACE_TRIGGER = 'triple_space'
+TRIPLE_SPACE_LOGGER = logging.getLogger('easy_translation.triple_space')
 
 
 def load_app_icon() -> QIcon:
@@ -819,7 +821,8 @@ class MainWindow(QMainWindow):
         """翻译出错"""
         self.output_text.setText(f"❌ {error}")
         if self._pending_external_replace:
-            self.show_window()
+            TRIPLE_SPACE_LOGGER.warning('External input translation failed: %s', error)
+            self._notify_background_message(APP_NAME, f'外部输入框翻译失败：{error}')
             self._pending_external_replace = False
     
     def on_screenshot_clicked(self):
@@ -879,18 +882,29 @@ class MainWindow(QMainWindow):
     
     def on_global_translate_triggered(self):
         """全局翻译热键回调"""
+        TRIPLE_SPACE_LOGGER.info('Global translate trigger received')
         if self.input_text.hasFocus():
             text = self.input_text.toPlainText().strip()
             if text:
+                TRIPLE_SPACE_LOGGER.info('Trigger handled inside main window input, text_length=%d', len(text))
                 self.do_translation()
             return
 
+        trim_trigger_spaces = config.HOTKEYS.get('translate_input', TRIPLE_SPACE_TRIGGER) == TRIPLE_SPACE_TRIGGER
+        if trim_trigger_spaces:
+            TRIPLE_SPACE_LOGGER.info('Trigger mode is triple_space, capture first and trim trailing spaces in memory')
+
         captured_text = self.capture_text_from_active_input()
         if not captured_text:
+            TRIPLE_SPACE_LOGGER.warning('Failed to capture text from active input')
             self.output_text.setText('❌ 未能从当前输入框获取文本，请确认光标位于可编辑文本框内')
-            self.show_window()
+            self._notify_background_message(APP_NAME, '未能从当前输入框获取文本，已取消本次翻译。')
             return
 
+        if trim_trigger_spaces:
+            captured_text = self._trim_triple_space_trigger(captured_text)
+
+        TRIPLE_SPACE_LOGGER.info('Captured text from active input, text_length=%d', len(captured_text))
         self.input_text.setText(captured_text)
         self.do_translation(captured_text, replace_active_input=True)
 
@@ -899,6 +913,47 @@ class MainWindow(QMainWindow):
             self.keyboard_controller.press(key)
         for key in reversed(keys):
             self.keyboard_controller.release(key)
+
+    def _tap_key(self, key):
+        self.keyboard_controller.press(key)
+        self.keyboard_controller.release(key)
+
+    def _suppress_triple_space_detection(self, reason: str):
+        if self.triple_click_detector:
+            return self.triple_click_detector.suppress_detection(reason)
+        return None
+
+    def _notify_background_message(self, title: str, message: str):
+        TRIPLE_SPACE_LOGGER.info('Background notification: %s | %s', title, message)
+        if hasattr(self, 'tray_icon') and self.tray_icon.isVisible():
+            self.tray_icon.showMessage(
+                title,
+                message,
+                QSystemTrayIcon.MessageIcon.Warning,
+                3000,
+            )
+
+    def _clear_external_selection(self):
+        """抓取后清掉外部输入框的全选状态，避免后续空格覆盖全文。"""
+        suppression = self._suppress_triple_space_detection('clear_selection')
+        try:
+            if suppression:
+                with suppression:
+                    self._tap_key(Key.right)
+            else:
+                self._tap_key(Key.right)
+            TRIPLE_SPACE_LOGGER.info('Cleared external text selection with RIGHT key')
+        except Exception:
+            TRIPLE_SPACE_LOGGER.exception('Failed to clear external text selection')
+            pass
+
+    def _trim_triple_space_trigger(self, text: str) -> str:
+        if text.endswith('   '):
+            TRIPLE_SPACE_LOGGER.info('Trimmed trailing triple-space trigger from captured text')
+            return text[:-3]
+
+        TRIPLE_SPACE_LOGGER.info('Captured text did not end with triple-space trigger, no trimming applied')
+        return text
 
     def _wait_for_clipboard_change(self, previous_text: str, timeout: float = 0.8) -> str:
         deadline = time.time() + timeout
@@ -909,24 +964,56 @@ class MainWindow(QMainWindow):
             time.sleep(0.05)
         return ''
 
+    def _copy_active_input_text(self, previous_clipboard: str, select_all: bool = True, timeout: float = 0.8) -> str:
+        suppression = self._suppress_triple_space_detection('capture_active_input')
+        if suppression:
+            with suppression:
+                if select_all:
+                    self._press_key_sequence(Key.ctrl, 'a')
+                    time.sleep(0.08)
+                self._press_key_sequence(Key.ctrl, 'c')
+        else:
+            if select_all:
+                self._press_key_sequence(Key.ctrl, 'a')
+                time.sleep(0.08)
+            self._press_key_sequence(Key.ctrl, 'c')
+
+        time.sleep(0.05)
+        return self._wait_for_clipboard_change(previous_clipboard, timeout=timeout)
+
     def capture_text_from_active_input(self):
         """从当前激活的软件输入框抓取文本。"""
-        previous_clipboard = self.clipboard_monitor.get_current_clipboard()
+        original_clipboard = self.clipboard_monitor.get_current_clipboard()
+        capture_sentinel = f'__easy_translation_capture__{time.time_ns()}__'
         self._clipboard_capture_in_progress = True
+        TRIPLE_SPACE_LOGGER.info('Starting capture from active input, previous_clipboard_length=%d', len(original_clipboard or ''))
 
         try:
-            self._press_key_sequence(Key.ctrl, 'a')
-            time.sleep(0.05)
-            self._press_key_sequence(Key.ctrl, 'c')
-            captured_text = self._wait_for_clipboard_change(previous_clipboard)
+            self.clipboard_monitor.set_clipboard(capture_sentinel)
+            self.clipboard_monitor.last_clipboard = capture_sentinel
+            time.sleep(0.03)
+
+            captured_text = self._copy_active_input_text(capture_sentinel, select_all=True, timeout=0.8)
+            if not captured_text:
+                TRIPLE_SPACE_LOGGER.warning('Primary capture attempt returned empty content, retrying select-all copy')
+                captured_text = self._copy_active_input_text(capture_sentinel, select_all=True, timeout=1.0)
+
+            if not captured_text:
+                TRIPLE_SPACE_LOGGER.warning('Retry capture still empty, falling back to copying current selection only')
+                captured_text = self._copy_active_input_text(capture_sentinel, select_all=False, timeout=0.6)
+
+            TRIPLE_SPACE_LOGGER.info('Capture finished, captured_length=%d', len(captured_text or ''))
             return captured_text.strip() if captured_text else ''
         except Exception:
+            TRIPLE_SPACE_LOGGER.exception('Exception while capturing text from active input')
             return ''
         finally:
+            self._clear_external_selection()
             try:
-                self.clipboard_monitor.set_clipboard(previous_clipboard)
-                self.clipboard_monitor.last_clipboard = previous_clipboard
+                self.clipboard_monitor.set_clipboard(original_clipboard)
+                self.clipboard_monitor.last_clipboard = original_clipboard
             except Exception:
+                TRIPLE_SPACE_LOGGER.exception('Failed to restore clipboard after capture')
                 pass
             self._clipboard_capture_in_progress = False
 
@@ -934,20 +1021,32 @@ class MainWindow(QMainWindow):
         """将翻译结果回填到当前激活的外部输入框。"""
         previous_clipboard = self.clipboard_monitor.get_current_clipboard()
         self._clipboard_capture_in_progress = True
+        TRIPLE_SPACE_LOGGER.info('Replacing text in active input, translated_length=%d', len(translated_text or ''))
 
         try:
             self.clipboard_monitor.set_clipboard(translated_text)
             self.clipboard_monitor.last_clipboard = translated_text
             time.sleep(0.05)
-            self._press_key_sequence(Key.ctrl, 'a')
+            suppression = self._suppress_triple_space_detection('replace_active_input')
+            if suppression:
+                with suppression:
+                    self._press_key_sequence(Key.ctrl, 'a')
+                    time.sleep(0.03)
+                    self._press_key_sequence(Key.ctrl, 'v')
+            else:
+                self._press_key_sequence(Key.ctrl, 'a')
+                time.sleep(0.03)
+                self._press_key_sequence(Key.ctrl, 'v')
             time.sleep(0.03)
-            self._press_key_sequence(Key.ctrl, 'v')
+            self._clear_external_selection()
+            TRIPLE_SPACE_LOGGER.info('External input replacement completed')
         finally:
             time.sleep(0.05)
             try:
                 self.clipboard_monitor.set_clipboard(previous_clipboard)
                 self.clipboard_monitor.last_clipboard = previous_clipboard
             except Exception:
+                TRIPLE_SPACE_LOGGER.exception('Failed to restore clipboard after replacement')
                 pass
             self._clipboard_capture_in_progress = False
     
