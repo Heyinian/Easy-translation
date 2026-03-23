@@ -4,8 +4,119 @@
 
 ## 版本说明
 
-- 当前版本：v0.5.2
+- 当前版本：v0.5.7
 - 版本策略：当前采用轻量语义化版本记录文档与功能阶段，不严格绑定发布包。
+
+---
+
+## v0.5.7 - 2026-03-23
+
+### 新增功能
+- 无
+
+### Bug 修复
+- **三击空格在绝大多数应用文本框中失效**：`_foreground_has_text_input()` 依赖 Win32 caret API 检测文本焦点，但现代应用框架（WPF、Qt、UWP、Electron 等）均不使用 Win32 caret，导致约 95% 的应用被误判为"非文本窗口"而跳过 Ctrl+A 步骤 → 改用窗口句柄对比策略：记录触发时的前台窗口句柄，只要发送 Ctrl+C 后窗口未切换就进行 Ctrl+A，彻底解决现代应用兼容性问题，同时保留焦点漂移保护（防止误全选背景应用），文件：`src/main_window.py`
+
+### 文档与工程
+- 无
+
+### 遗留问题
+- B-002：`_clear_external_selection` Right 键在富文本编辑器中移动光标
+- B-003：多显示器下窗口居中基于主屏而非鼠标所在屏
+
+---
+
+## v0.5.6 - 2026-03-23
+
+### 新增功能
+- 无
+
+### Bug 修复
+- **外部应用三击空格被误判为主窗口内部触发**：pynput 在驱动层拦截按键速度快于 Windows 向 Qt 发送 WM_KILLFOCUS，存在竞态导致 `hasFocus()` 返回旧值（True），误判客户在主窗口输入框。修复：新增 `_is_our_app_foreground()` 同时用 Win32 `GetForegroundWindow()` + `GetWindowThreadProcessId()` 查询系统级进程 ID，与 `hasFocus()` 做双重验证 → 彝彻规避竞态，文件：`src/main_window.py`
+
+### 文档与工程
+- 无
+
+### 遗留问题
+- B-001：Electron/浏览器类应用三击空格抓取成功率低
+- B-002：`_clear_external_selection` Right 键在富文本编辑器中移动光标
+- B-003：多显示器下窗口居中基于主屏而非鼠标所在屏
+
+---
+
+## v0.5.5 - 2026-03-23
+
+### 新增功能
+- 无
+
+### Bug 修复
+- **PyInstaller 打包后任务栏/托盘图标丢失**：`config.py` 中 `Path(__file__).parent.parent` 在 onefile 模式下指向系统临时目录，导致 assets 路径错误 → 检测 `sys.frozen` 标志，冻结环境下改用 `Path(sys._MEIPASS) / 'assets'`，文件：`src/config.py`
+- **PyInstaller 打包后关闭窗口无法后台运行**：托盘图标因 assets 路径错误无法设置图标，`QSystemTrayIcon.show()` 静默失败，关闭窗口后应用消失 → 同上修复 assets 路径后托盘图标恢复正常，文件：`src/config.py`
+- **PyInstaller 打包后三击空格翻译失效**：`pynput.keyboard._win32` 和 `pynput.mouse._win32` 未被自动识别并打入包，pynput 无法初始化键盘监听器 → 在 spec 中添加 `hiddenimports=['pynput.keyboard._win32', 'pynput.mouse._win32']`，文件：`Easy-translation.spec`
+- **运行时目录位置错误**：`settings_manager.py` 的路径计算与 `config.py` 相同问题 → 检测冻结环境，改用 `Path(sys.executable).parent / 'runtime'` 作为运行时目录，文件：`src/settings_manager.py`
+
+### 文档与工程
+- 无
+
+### 遗留问题
+- B-001：Electron/浏览器类应用三击空格抓取成功率低
+- B-002：`_clear_external_selection` Right 键在富文本编辑器中移动光标
+- B-003：多显示器下窗口居中基于主屏而非鼠标所在屏
+
+---
+
+## v0.5.4 - 2026-03-23
+
+### 新增功能
+- 无
+
+### Bug 修复
+- 无
+
+### 文档与工程
+- **项目结构重组**：将全部源码模块（7 个 `.py` 文件）从根目录迁入 `src/` 包，`app.py` 保留在根目录作为唯一入口并通过 `sys.path` 注入 `src/`
+- **运行时数据统一**：新建 `runtime/` 目录，将 `logs/`、`screenshots/`、`user_settings.json`、`.settings.key` 统一迁入，`.gitignore` 改为整体排除 `runtime/`
+- **路径配置更新**：`src/config.py` 中 `PROJECT_ROOT = Path(__file__).parent.parent`，新增 `RUNTIME_DIR = PROJECT_ROOT / 'runtime'`；`src/settings_manager.py` 同步更新路径
+- **PyInstaller 配置更新**：`Easy-translation.spec` 中 `pathex` 新增 `'src'`，确保打包时正确解析模块
+- **归档规则文件**：`.github/copilot-instructions.md` 新增项目目录约定章节，明确 `src/`、`runtime/` 的使用规范
+
+### 遗留问题
+- B-001：浏览器/Electron 类应用三击空格成功率低
+- B-002：_clear_external_selection 在富文本编辑器中可能移动光标
+- B-003：多显示器环境下窗口居中仅基于 primaryScreen
+
+---
+
+## v0.5.3 - 2026-03-23
+
+### Bug 修复
+
+#### 三击空格在非文本窗口误触发全选
+
+- **问题**：在打开非文本窗口（游戏、媒体播放器等）后三击空格，`capture_text_from_active_input` 无条件发送 `Ctrl+A`，导致后台有文本输入框的应用被全选，界面出现蓝色高亮覆盖
+- **修复**：新增 `_foreground_has_text_input()` 方法，通过 Windows API `GetGUIThreadInfo` 检测前台窗口是否存在活跃文本光标（Win32 caret），同时通过窗口类名识别 Chrome / Edge / Firefox 等自绘光标的浏览器；仅在检测到文本输入焦点时才发送 `Ctrl+A`
+- **文件**：`main_window.py`
+- **抓取策略调整**：先发 `Ctrl+C`（无副作用），无结果且有文本光标才升级为 `Ctrl+A + Ctrl+C`；`_clear_external_selection` 的 Right 键也改为仅在执行了 `Ctrl+A` 时才发送
+
+#### 主窗口启动不在屏幕中央
+
+- **问题**：`init_ui` 中使用硬编码坐标 `setGeometry(100, 100, ...)` 定位窗口，无论屏幕分辨率如何，窗口总是出现在左上角附近
+- **修复**：改为 `resize()` 设置尺寸后，通过 `QApplication.primaryScreen().geometry()` 动态计算居中坐标
+- **文件**：`main_window.py`
+
+#### PyQt6 版本锁定导致 DLL 加载失败
+
+- **问题**：`requirements.txt` 将 PyQt6 锁定为 `==6.6.1`，但 pip 自动安装的 `PyQt6-Qt6==6.10.x` 与之不兼容，导致启动时报 `DLL load failed while importing QtCore`
+- **修复**：放宽版本约束为 `PyQt6>=6.7.0`，`pip` 会自动解析匹配版本
+- **文件**：`requirements.txt`
+
+### 文档体系重构
+
+- 新增 `docs/PROJECT_STATUS.md`：AI 开发者快速接入文档，包含当前版本状态、已知 Bug 列表、架构图、避坑清单
+- `CHANGELOG.md` 改为以版本块归档，追加增量，不覆盖历史
+- `DEVELOPER_GUIDE.md` 重写，强化模块职责说明和跨模块数据流
+
+---
 
 ## v0.5.2 - 2026-03-21
 

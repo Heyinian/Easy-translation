@@ -2,6 +2,7 @@
 设置管理模块 - 负责用户设置和 API 密钥的本地持久化
 """
 import json
+import sys
 from copy import deepcopy
 from pathlib import Path
 from typing import Any, Dict, Optional
@@ -9,9 +10,14 @@ from typing import Any, Dict, Optional
 from cryptography.fernet import Fernet, InvalidToken
 
 
-PROJECT_ROOT = Path(__file__).parent
-SETTINGS_FILE = PROJECT_ROOT / 'user_settings.json'
-KEY_FILE = PROJECT_ROOT / '.settings.key'
+# PyInstaller 打包后 exe 所在目录作为项目根，源码运行时取 src/../
+if getattr(sys, 'frozen', False):
+    _RUNTIME_DIR = Path(sys.executable).parent / 'runtime'
+else:
+    _RUNTIME_DIR = Path(__file__).parent.parent / 'runtime'
+_RUNTIME_DIR.mkdir(exist_ok=True)
+SETTINGS_FILE = _RUNTIME_DIR / 'user_settings.json'
+KEY_FILE = _RUNTIME_DIR / '.settings.key'
 
 DEFAULT_SETTINGS = {
     'default_api': 'google',

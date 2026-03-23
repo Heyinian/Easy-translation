@@ -1,14 +1,25 @@
 """
 配置文件 - 存放应用的全局配置和常量
 """
+import sys
 from copy import deepcopy
 from pathlib import Path
 
 from settings_manager import settings_manager
 
-# 项目根目录
-PROJECT_ROOT = Path(__file__).parent
-ASSETS_DIR = PROJECT_ROOT / 'assets'
+# 检测是否运行在 PyInstaller 打包环境中
+_FROZEN = getattr(sys, 'frozen', False)
+
+if _FROZEN:
+    # PyInstaller onefile：exe 所在目录作为项目根，assets 在临时解压目录
+    PROJECT_ROOT = Path(sys.executable).parent
+    RUNTIME_DIR = PROJECT_ROOT / 'runtime'
+    ASSETS_DIR = Path(sys._MEIPASS) / 'assets'
+else:
+    # 源码运行：src/ 的上一级为项目根
+    PROJECT_ROOT = Path(__file__).parent.parent
+    RUNTIME_DIR = PROJECT_ROOT / 'runtime'
+    ASSETS_DIR = PROJECT_ROOT / 'assets'
 
 # 应用基础信息
 APP_NAME = 'Easy-translation'
@@ -65,7 +76,8 @@ LANGUAGE_PAIRS = {
 }
 
 # 截图保存路径
-SCREENSHOT_DIR = PROJECT_ROOT / 'screenshots'
+SCREENSHOT_DIR = RUNTIME_DIR / 'screenshots'
+RUNTIME_DIR.mkdir(exist_ok=True)
 SCREENSHOT_DIR.mkdir(exist_ok=True)
 
 # OCR配置（Tesseract）
@@ -86,7 +98,7 @@ WINDOW_HEIGHT = 400
 WINDOW_TITLE = APP_NAME
 
 # 日志配置
-LOG_DIR = PROJECT_ROOT / 'logs'
+LOG_DIR = RUNTIME_DIR / 'logs'
 LOG_DIR.mkdir(exist_ok=True)
 LOG_LEVEL = 'INFO'
 

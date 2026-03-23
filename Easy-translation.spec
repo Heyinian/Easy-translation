@@ -3,10 +3,10 @@
 
 a = Analysis(
     ['app.py'],
-    pathex=[],
+    pathex=['src'],
     binaries=[],
     datas=[('assets', 'assets')],
-    hiddenimports=[],
+    hiddenimports=['pynput.keyboard._win32', 'pynput.mouse._win32'],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],

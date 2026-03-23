@@ -497,8 +497,13 @@ class MainWindow(QMainWindow):
         self.setWindowTitle(WINDOW_TITLE)
         if not self.app_icon.isNull():
             self.setWindowIcon(self.app_icon)
-        self.setGeometry(100, 100, WINDOW_WIDTH, WINDOW_HEIGHT)
-        
+        self.resize(WINDOW_WIDTH, WINDOW_HEIGHT)
+        screen = QApplication.primaryScreen().geometry()
+        self.move(
+            (screen.width() - WINDOW_WIDTH) // 2,
+            (screen.height() - WINDOW_HEIGHT) // 2,
+        )
+
         # 中央窗口
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
@@ -880,10 +885,28 @@ class MainWindow(QMainWindow):
         self.input_text.setText(text)
         self.do_translation()
     
+    def _is_our_app_foreground(self) -> bool:
+        """用 Win32 API 判断当前前台窗口是否属于本进程。
+
+        比 Qt 的 hasFocus() / isActiveWindow() 更可靠：pynput 在驱动层拦截按键，
+        速度快于 Windows 向 Qt 发送 WM_KILLFOCUS，存在竞态导致 hasFocus() 返回旧值。
+        """
+        try:
+            foreground_hwnd = ctypes.windll.user32.GetForegroundWindow()
+            if not foreground_hwnd:
+                return False
+            pid = ctypes.c_ulong(0)
+            ctypes.windll.user32.GetWindowThreadProcessId(foreground_hwnd, ctypes.byref(pid))
+            return pid.value == os.getpid()
+        except Exception:
+            return self.isActiveWindow()
+
     def on_global_translate_triggered(self):
         """全局翻译热键回调"""
         TRIPLE_SPACE_LOGGER.info('Global translate trigger received')
-        if self.input_text.hasFocus():
+        # 使用 Win32 GetForegroundWindow 检查系统级焦点，不依赖 Qt hasFocus()
+        # 以规避 pynput 竞态（按键事件早于 WM_KILLFOCUS 到达 Qt 事件队列）
+        if self._is_our_app_foreground() and self.input_text.hasFocus():
             text = self.input_text.toPlainText().strip()
             if text:
                 TRIPLE_SPACE_LOGGER.info('Trigger handled inside main window input, text_length=%d', len(text))
@@ -897,8 +920,7 @@ class MainWindow(QMainWindow):
         captured_text = self.capture_text_from_active_input()
         if not captured_text:
             TRIPLE_SPACE_LOGGER.warning('Failed to capture text from active input')
-            self.output_text.setText('❌ 未能从当前输入框获取文本，请确认光标位于可编辑文本框内')
-            self._notify_background_message(APP_NAME, '未能从当前输入框获取文本，已取消本次翻译。')
+            self._notify_background_message(APP_NAME, '未能从当前输入框获取文本，请确认光标位于可编辑文本框内。')
             return
 
         if trim_trigger_spaces:
@@ -964,6 +986,52 @@ class MainWindow(QMainWindow):
             time.sleep(0.05)
         return ''
 
+    def _foreground_has_text_input(self) -> bool:
+        """尽力检测前台窗口是否有文本输入焦点（光标），避免向游戏等非文本窗口发送 Ctrl+A。"""
+        try:
+            hwnd = ctypes.windll.user32.GetForegroundWindow()
+            if not hwnd:
+                return False
+
+            thread_id = ctypes.windll.user32.GetWindowThreadProcessId(hwnd, None)
+
+            class _GUITHREADINFO(ctypes.Structure):
+                _fields_ = [
+                    ('cbSize',       ctypes.c_uint32),
+                    ('flags',        ctypes.c_uint32),
+                    ('hwndActive',   ctypes.c_void_p),
+                    ('hwndFocus',    ctypes.c_void_p),
+                    ('hwndCapture',  ctypes.c_void_p),
+                    ('hwndMenuOwner',ctypes.c_void_p),
+                    ('hwndMoveSize', ctypes.c_void_p),
+                    ('hwndCaret',    ctypes.c_void_p),
+                    ('rcCaret',      ctypes.c_byte * 16),  # RECT: 4 × LONG
+                ]
+
+            gui_info = _GUITHREADINFO()
+            gui_info.cbSize = ctypes.sizeof(_GUITHREADINFO)
+            if not ctypes.windll.user32.GetGUIThreadInfo(thread_id, ctypes.byref(gui_info)):
+                return True  # API 调用失败，保守地认为有文本输入
+
+            if gui_info.hwndCaret:
+                return True  # Win32 caret 激活 → 标准文本控件
+
+            # 浏览器和 Electron 应用自行绘制光标，不走 Win32 caret API
+            # 通过窗口类名识别，使三击空格在浏览器文本框内仍可用
+            focused_hwnd = gui_info.hwndFocus or hwnd
+            buf = ctypes.create_unicode_buffer(256)
+            ctypes.windll.user32.GetClassNameW(focused_hwnd, buf, 256)
+            class_name = buf.value
+
+            web_render_classes = {
+                'Chrome_RenderWidgetHostHWND',  # Chrome / Edge（新版）/ Electron
+                'MozillaWindowClass',            # Firefox
+            }
+            return class_name in web_render_classes
+        except Exception:
+            TRIPLE_SPACE_LOGGER.exception('_foreground_has_text_input 检测失败')
+            return True  # 保守回退：假设有文本输入
+
     def _copy_active_input_text(self, previous_clipboard: str, select_all: bool = True, timeout: float = 0.8) -> str:
         suppression = self._suppress_triple_space_detection('capture_active_input')
         if suppression:
@@ -986,21 +1054,38 @@ class MainWindow(QMainWindow):
         original_clipboard = self.clipboard_monitor.get_current_clipboard()
         capture_sentinel = f'__easy_translation_capture__{time.time_ns()}__'
         self._clipboard_capture_in_progress = True
+        did_select_all = False
         TRIPLE_SPACE_LOGGER.info('Starting capture from active input, previous_clipboard_length=%d', len(original_clipboard or ''))
+
+        # 在开始前记录当前前台窗口，用于防止焦点漂移后向错误窗口发送 Ctrl+A
+        foreground_hwnd_before = ctypes.windll.user32.GetForegroundWindow()
 
         try:
             self.clipboard_monitor.set_clipboard(capture_sentinel)
             self.clipboard_monitor.last_clipboard = capture_sentinel
             time.sleep(0.03)
 
-            captured_text = self._copy_active_input_text(capture_sentinel, select_all=True, timeout=0.8)
-            if not captured_text:
-                TRIPLE_SPACE_LOGGER.warning('Primary capture attempt returned empty content, retrying select-all copy')
-                captured_text = self._copy_active_input_text(capture_sentinel, select_all=True, timeout=1.0)
+            # 第一步：仅 Ctrl+C（无副作用），获取已选中的文本
+            captured_text = self._copy_active_input_text(capture_sentinel, select_all=False, timeout=0.5)
 
             if not captured_text:
-                TRIPLE_SPACE_LOGGER.warning('Retry capture still empty, falling back to copying current selection only')
-                captured_text = self._copy_active_input_text(capture_sentinel, select_all=False, timeout=0.6)
+                # 第二步：若无选中文本，检查前台窗口是否仍是触发时的同一窗口
+                # 策略：只要窗口未切换就尝试 Ctrl+A，不依赖 Win32 caret 检测
+                # （Win32 caret 只存在于旧式控件，WPF/Qt/UWP/Electron 等现代框架均不使用）
+                # 安全保障：对比窗口句柄，防止焦点漂移后误全选背景应用
+                current_foreground_hwnd = ctypes.windll.user32.GetForegroundWindow()
+                if foreground_hwnd_before and current_foreground_hwnd == foreground_hwnd_before:
+                    did_select_all = True
+                    TRIPLE_SPACE_LOGGER.info('No selection found, attempting select-all copy (hwnd=%s)', hex(current_foreground_hwnd))
+                    captured_text = self._copy_active_input_text(capture_sentinel, select_all=True, timeout=0.8)
+                    if not captured_text:
+                        TRIPLE_SPACE_LOGGER.warning('Select-all capture returned empty, retrying')
+                        captured_text = self._copy_active_input_text(capture_sentinel, select_all=True, timeout=1.0)
+                else:
+                    TRIPLE_SPACE_LOGGER.info(
+                        'Foreground window changed during capture (before=%s, after=%s), skipping Ctrl+A to avoid selecting wrong window',
+                        hex(foreground_hwnd_before or 0), hex(current_foreground_hwnd or 0)
+                    )
 
             TRIPLE_SPACE_LOGGER.info('Capture finished, captured_length=%d', len(captured_text or ''))
             return captured_text.strip() if captured_text else ''
@@ -1008,7 +1093,8 @@ class MainWindow(QMainWindow):
             TRIPLE_SPACE_LOGGER.exception('Exception while capturing text from active input')
             return ''
         finally:
-            self._clear_external_selection()
+            if did_select_all:
+                self._clear_external_selection()
             try:
                 self.clipboard_monitor.set_clipboard(original_clipboard)
                 self.clipboard_monitor.last_clipboard = original_clipboard

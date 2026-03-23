@@ -39,14 +39,8 @@ dist/
 *.spec.bak
 site/
 
-# Local runtime files
-logs/
-screenshots/
-*.log
-
-# Local secrets and machine-specific settings
-.settings.key
-user_settings.json
+# Runtime data directory（程序运行时自动生成，不提交）
+runtime/
 .env
 .env.*
 

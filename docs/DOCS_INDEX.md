@@ -4,6 +4,10 @@
 
 ## 按角色查阅
 
+### 0. AI 开发者 / 异地接手者（首选）
+
+- [PROJECT_STATUS.md](PROJECT_STATUS.md) — 当前版本、Bug 列表、架构速查、避坑清单
+
 ### 1. 首次查看项目
 
 - [README.md](../README.md)
@@ -32,7 +36,13 @@
 
 - [CHANGELOG.md](CHANGELOG.md)
 
+---
+
 ## 按目的查阅
+
+### 想快速了解当前项目状态和待处理 Bug
+
+- [PROJECT_STATUS.md](PROJECT_STATUS.md)
 
 ### 想知道项目现在能做什么
 
@@ -57,6 +67,41 @@
 ### 想快速了解每个版本对使用者的影响
 
 - [RELEASE_NOTES.md](RELEASE_NOTES.md)
+
+### 想回溯某次变更是在哪个版本引入的
+
+- [CHANGELOG.md](CHANGELOG.md)
+
+---
+
+## 文档体系说明
+
+| 文档 | 更新频率 | 维护责任 |
+|------|----------|----------|
+| PROJECT_STATUS.md | 每次改动后更新当前版本号 / Bug 状态 | 每次发版必须同步 |
+| CHANGELOG.md | 每个版本追加一个版本块，**不覆盖历史** | 每次发版必须同步 |
+| DEVELOPER_GUIDE.md | 架构或模块职责发生变化时更新 | 按需 |
+| TESTING.md | 新增功能或回归重点变化时更新 | 按需 |
+| DEPLOYMENT.md | 依赖或部署流程变化时更新 | 按需 |
+| RELEASE_NOTES.md | 每个版本追加用户可见变化 | 每次发版 |
+| QUICKSTART.md | 启动命令或环境要求变化时更新 | 按需 |
+
+---
+
+## 强制归档规则
+
+开发规范文件：[.github/copilot-instructions.md](../.github/copilot-instructions.md)
+
+每次修改源代码（`.py`）后，AI 开发者必须在结束会话前执行增量归档，步骤如下：
+
+1. 递增 patch 版本号（`PROJECT_STATUS.md` → `当前版本`）
+2. 在 `CHANGELOG.md` 顶部新增版本块（不修改历史块）
+3. 更新 `PROJECT_STATUS.md` 的 Bug 表和功能规划表
+4. 按需更新 `DEVELOPER_GUIDE.md`
+5. 输出"归档确认清单"
+
+**快速触发**：在 Copilot Chat 中输入 `/archive-dev-session` 可一键执行完整归档流程。
+
 
 ### 想知道最近改了什么
 

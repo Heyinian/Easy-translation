@@ -8,8 +8,39 @@
 			"args": [
 				"app.py"
 			],
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
 			"isBackground": true,
-			"group": "build"
+			"group": "build",
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "dedicated",
+				"label": "Easy-translation 源码版"
+			}
+		},
+		{
+			"label": "重启源码版 Easy-translation",
+			"type": "shell",
+			"command": "Stop-Process -Name python* -ErrorAction SilentlyContinue; Start-Sleep -Seconds 1; Start-Process '${workspaceFolder}/.venv312/Scripts/python.exe' -ArgumentList 'app.py' -WorkingDirectory '${workspaceFolder}'",
+			"options": {
+				"cwd": "${workspaceFolder}",
+				"shell": {
+					"executable": "powershell.exe",
+					"args": ["-NoProfile", "-Command"]
+				}
+			},
+			"isBackground": false,
+			"group": "build",
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "dedicated",
+				"label": "重启 Easy-translation"
+			}
 		}
 	]
 }
