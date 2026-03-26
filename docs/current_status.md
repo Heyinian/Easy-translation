@@ -29,6 +29,7 @@ Last updated: `2026-03-26`
   - 外部输入框内容抓取与回填
   - Google / 百度 / 腾讯 / Ollama 多翻译源切换
   - 系统托盘常驻与单实例保护
+- 当前 LLM 类翻译只在 `ollama` provider 中以硬编码 prompt 的方式实现，还没有独立的 profile 层
 - 运行时本地数据仍存放在 `runtime/`，不应提交到仓库
 - 原有的产品级技术交接文档已经保留到 `docs/app_developer_guide.md`
 - 原有的产品状态与 Bug/功能规划文档继续保留在 `docs/PROJECT_STATUS.md`
@@ -46,6 +47,8 @@ Last updated: `2026-03-26`
   - `tests/test_smoke_baseline.py`
   - `scripts/run_smoke_tests.ps1`
   - `tests/README.md`
+- AI 场景翻译 profile 与 `BYOK OpenAI-compatible` provider 的方案评估已整理到 `docs/ai_translation_profile_plan.md`，但尚未进入实现
+- “输入法候选词式”翻译悬浮窗也已完成方案登记，但仍处于规划阶段，尚未实现
 - 依据已有项目文档，当前仍需关注的产品问题包括：
   - 外部输入框回填后用于清除选中的方向键行为可能移动光标
   - 多显示器环境下窗口居中仍基于主屏而非当前使用屏幕
@@ -69,3 +72,5 @@ Last updated: `2026-03-26`
 - 当前 smoke baseline 仍未接入 hosted CI，也不覆盖 GUI 级交互回归
 - 当前 backlog 仍需要把既有产品 Bug 与 skeleton 接入后的运维任务并行维护
 - 合同文档目前已可用，但仍可继续结合项目实际收紧边界
+- AI 场景翻译 profile 与云端 LLM provider 接入仍处于规划阶段，首期范围已收敛为 `BYOK` 模式而非绑定单一厂商
+- 候选词悬浮窗模式依赖后续 AI profile / provider 抽象，当前还没有对应 UI、状态机和回填保护逻辑
