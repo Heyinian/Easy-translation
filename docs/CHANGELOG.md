@@ -18,6 +18,23 @@
 - 无
 
 ### 文档与工程
+- **移除文档中的本机开发绝对路径**：`docs/PROJECT_STATUS.md` 的本地启动示例包含仓库盘符路径和用户目录下的 uv Python 解释器路径，不适用于其他机器 → 改为仓库相对位置占位符和通用的 Python 3.12 建立虚拟环境命令，文件：`docs/PROJECT_STATUS.md`
+
+### 遗留问题
+- B-002：`_clear_external_selection` Right 键在富文本编辑器中移动光标
+- B-003：多显示器下窗口居中基于主屏而非鼠标所在屏
+
+---
+
+## v0.5.9 - 2026-03-26
+
+### 新增功能
+- 无
+
+### Bug 修复
+- 无
+
+### 文档与工程
 - **AI 翻译规划入库**：新增 `docs/ai_translation_profile_plan.md`，把 AI 场景翻译 profile、`BYOK` 兼容 provider 与可选候选词悬浮窗的方案、边界和 token 成本约束收敛为正式设计文档
 - **任务体系扩展**：`docs/backlog.md` 与 `docs/PROJECT_STATUS.md` 新增 `ET-FEAT-002`、`ET-FEAT-003`、`ET-FEAT-004` 及对应规划项，覆盖 AI profile、`BYOK` provider 和候选词悬浮窗
 - **发布检查点刷新**：同步 `README.md`、`docs/current_status.md`、`docs/RELEASE_NOTES.md`、`docs/RELEASE_DRAFT.md`、`config/project/current_project.json` 等版本落点，并重新生成 Windows release 包

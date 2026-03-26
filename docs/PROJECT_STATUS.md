@@ -174,11 +174,11 @@ with self._suppress_triple_space_detection('my_reason'):
 
 ```powershell
 # 进入项目目录
-cd G:\GitHub\Easy-translation
+cd <项目目录>\Easy-translation
 
-# 创建虚拟环境（使用 uv 管理的 Python 3.12）
-& "C:\Users\wuyuli\AppData\Roaming\uv\python\cpython-3.12.11-windows-x86_64-none\python.exe" -m venv .venv312
-# 或 py -3.12 -m venv .venv312（如果系统 py launcher 能找到 3.12）
+# 创建虚拟环境（推荐 Python 3.12）
+py -3.12 -m venv .venv312
+# 或 python -m venv .venv312（当前默认 python 已是 3.12 时）
 
 # 安装依赖
 .\.venv312\Scripts\pip install -r requirements.txt
