@@ -2,7 +2,7 @@
 
 基于 PyQt6 的 Windows 桌面翻译工具，支持截图 OCR、剪贴板翻译、外部输入框回填翻译、多翻译源切换，以及系统托盘后台运行。
 
-当前版本：`v0.5.7`
+当前版本：`v0.5.8`
 
 ## 功能概览
 
@@ -116,10 +116,14 @@ py -3.12 -m venv .venv312
 
 ## 文档导航
 
+- [开发骨架入口](docs/START_HERE.md)
+- [当前开发状态](docs/current_status.md)
+- [开发待办](docs/backlog.md)
+- [开发路线](docs/roadmap.md)
 - [文档索引](docs/DOCS_INDEX.md)
 - [项目状态](docs/PROJECT_STATUS.md)
 - [快速上手](docs/QUICKSTART.md)
-- [开发者指南](docs/DEVELOPER_GUIDE.md)
+- [应用开发细节](docs/app_developer_guide.md)
 - [测试说明](docs/TESTING.md)
 - [部署说明](docs/DEPLOYMENT.md)
 - [发布说明](docs/RELEASE_NOTES.md)
@@ -152,7 +156,8 @@ py -3.12 -m venv .venv312
 - 全局热键：`src/hotkey_manager.py`
 - OCR：`src/ocr_handler.py`
 
-更多开发细节见 [docs/DEVELOPER_GUIDE.md](docs/DEVELOPER_GUIDE.md)。
+更多开发细节见 [docs/app_developer_guide.md](docs/app_developer_guide.md)。
+开发骨架协作入口见 [docs/START_HERE.md](docs/START_HERE.md)。
 
 ## License
 

@@ -7,7 +7,7 @@
 - 文档索引：DOCS_INDEX.md
 - 项目总览：../README.md
 - 快速上手：QUICKSTART.md
-- 开发者归档：DEVELOPER_GUIDE.md
+- 开发者归档：app_developer_guide.md
 - 部署说明：DEPLOYMENT.md
 - 发布说明：RELEASE_NOTES.md
 - 变更记录：CHANGELOG.md
@@ -26,6 +26,26 @@
 ```powershell
 .\.venv312\Scripts\python.exe app.py
 ```
+
+自动化 smoke baseline 命令：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\run_smoke_tests.ps1
+```
+
+当前自动化覆盖范围：
+
+1. `app.py` 的入口路径注入
+2. `config.py` / `settings_manager.py` 的基础加载
+3. runtime 目录覆盖与默认文件初始化
+4. `TranslatorCore` 的基础无网络行为
+
+当前自动化**不覆盖**：
+
+1. PyQt6 主窗口真实显示与托盘交互
+2. 全局热键真实监听
+3. 剪贴板与外部输入框的端到端交互
+4. OCR 和打包产物验证
 
 ## 2. 冒烟测试
 

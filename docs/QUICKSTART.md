@@ -6,7 +6,7 @@
 
 - 文档索引：DOCS_INDEX.md
 - 项目总览：../README.md
-- 开发者归档：DEVELOPER_GUIDE.md
+- 开发者归档：app_developer_guide.md
 - 部署说明：DEPLOYMENT.md
 - 测试说明：TESTING.md
 - 发布说明：RELEASE_NOTES.md
@@ -65,7 +65,7 @@ C:\Program Files\Tesseract-OCR\tesseract.exe
 
 - 用户入口说明：README.md
 - 用户入口说明：../README.md
-- 开发者归档：DEVELOPER_GUIDE.md
+- 开发者归档：app_developer_guide.md
 - 部署说明：DEPLOYMENT.md
 - 测试说明：TESTING.md
 - 发布说明：RELEASE_NOTES.md

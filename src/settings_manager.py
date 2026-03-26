@@ -2,6 +2,7 @@
 设置管理模块 - 负责用户设置和 API 密钥的本地持久化
 """
 import json
+import os
 import sys
 from copy import deepcopy
 from pathlib import Path
@@ -10,11 +11,19 @@ from typing import Any, Dict, Optional
 from cryptography.fernet import Fernet, InvalidToken
 
 
-# PyInstaller 打包后 exe 所在目录作为项目根，源码运行时取 src/../
-if getattr(sys, 'frozen', False):
-    _RUNTIME_DIR = Path(sys.executable).parent / 'runtime'
-else:
-    _RUNTIME_DIR = Path(__file__).parent.parent / 'runtime'
+def _resolve_runtime_dir() -> Path:
+    override = os.environ.get('EASY_TRANSLATION_RUNTIME_DIR', '').strip()
+    if override:
+        return Path(override).expanduser().resolve()
+
+    # PyInstaller 打包后 exe 所在目录作为项目根，源码运行时取 src/../
+    if getattr(sys, 'frozen', False):
+        return Path(sys.executable).parent / 'runtime'
+
+    return Path(__file__).parent.parent / 'runtime'
+
+
+_RUNTIME_DIR = _resolve_runtime_dir()
 _RUNTIME_DIR.mkdir(exist_ok=True)
 SETTINGS_FILE = _RUNTIME_DIR / 'user_settings.json'
 KEY_FILE = _RUNTIME_DIR / '.settings.key'

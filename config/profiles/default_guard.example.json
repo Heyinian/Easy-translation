@@ -1,0 +1,15 @@
+{
+  "id": "default-guard-profile",
+  "protected_paths": [
+    "docs/START_HERE.md",
+    "docs/current_status.md",
+    "docs/backlog.md",
+    "docs/roadmap.md"
+  ],
+  "required_documents": [
+    "docs/development_guidelines.md",
+    "docs/HANDOFF_PROTOCOL.md",
+    "docs/versioning_policy.md"
+  ],
+  "notes": "Example repository guard profile for a project using this skeleton."
+}

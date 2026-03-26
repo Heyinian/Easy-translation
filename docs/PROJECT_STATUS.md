@@ -14,8 +14,8 @@
 
 | 项目 | 值 |
 |------|-----|
-| 当前版本 | **v0.5.7** |
-| 最后归档日期 | 2026-03-23 |
+| 当前版本 | **v0.5.8** |
+| 最后归档日期 | 2026-03-26 |
 | 运行平台 | Windows（仅支持） |
 | 推荐 Python | 3.12（.venv312） |
 | 整体状态 | ✅ 可正常启动并完成核心功能 |
@@ -39,6 +39,7 @@
 | 智能中英方向检测 | ✅ 稳定 | 自动 |
 | API 密钥本地加密存储 | ✅ 稳定 | 自动 |
 | 设置界面 | ✅ 稳定 | 界面按钮 / 托盘菜单 |
+| 最小 automated smoke baseline | ✅ 已接入 | `scripts/run_smoke_tests.ps1` |
 
 ---
 
@@ -200,7 +201,7 @@ cd G:\GitHub\Easy-translation
 | 文档 | 面向对象 | 核心内容 |
 |------|----------|----------|
 | **PROJECT_STATUS.md**（本文） | AI 开发者 / 接手者 | 项目状态、Bug 列表、架构速查 |
-| [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md) | 深度开发者 | 模块详解、扩展建议、交接清单 |
+| [app_developer_guide.md](app_developer_guide.md) | 深度开发者 | 模块详解、扩展建议、交接清单 |
 | [CHANGELOG.md](CHANGELOG.md) | 所有开发者 | 版本演进与功能归档 |
 | [TESTING.md](TESTING.md) | 测试 / QA | 功能测试清单与回归重点 |
 | [DEPLOYMENT.md](DEPLOYMENT.md) | 部署 / 实施 | 安装、打包、分发说明 |

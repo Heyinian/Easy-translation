@@ -1,6 +1,7 @@
 """
 配置文件 - 存放应用的全局配置和常量
 """
+import os
 import sys
 from copy import deepcopy
 from pathlib import Path
@@ -13,13 +14,17 @@ _FROZEN = getattr(sys, 'frozen', False)
 if _FROZEN:
     # PyInstaller onefile：exe 所在目录作为项目根，assets 在临时解压目录
     PROJECT_ROOT = Path(sys.executable).parent
-    RUNTIME_DIR = PROJECT_ROOT / 'runtime'
     ASSETS_DIR = Path(sys._MEIPASS) / 'assets'
 else:
     # 源码运行：src/ 的上一级为项目根
     PROJECT_ROOT = Path(__file__).parent.parent
-    RUNTIME_DIR = PROJECT_ROOT / 'runtime'
     ASSETS_DIR = PROJECT_ROOT / 'assets'
+
+_runtime_override = os.environ.get('EASY_TRANSLATION_RUNTIME_DIR', '').strip()
+if _runtime_override:
+    RUNTIME_DIR = Path(_runtime_override).expanduser().resolve()
+else:
+    RUNTIME_DIR = PROJECT_ROOT / 'runtime'
 
 # 应用基础信息
 APP_NAME = 'Easy-translation'

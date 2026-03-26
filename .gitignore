@@ -4,6 +4,19 @@ __pycache__/
 *.pyo
 *$py.class
 
+# Repository-local artifacts
+artifacts/
+!artifacts/
+artifacts/*
+!artifacts/README.md
+*.log
+*.tmp
+*.cache
+*.pid
+*.user
+*.suo
+*.rsuser
+
 # Python tooling caches
 .pytest_cache/
 .mypy_cache/
@@ -20,12 +33,20 @@ htmlcov/
 coverage.xml
 nosetests.xml
 pytest.xml
+coverage/
 
 # Packaging artifacts
 .Python
 .eggs/
 *.egg-info/
 pip-wheel-metadata/
+bin/
+obj/
+Debug/
+Release/
+x64/
+x86/
+TestResults/
 
 # Virtual environments
 .venv/
@@ -43,8 +64,14 @@ site/
 runtime/
 .env
 .env.*
+node_modules/
+.pnpm-store/
+config/**/*.local.json
+config/**/*.local.yaml
+config/**/*.local.yml
 
 # IDE files
+.vs/
 .vscode/*
 !.vscode/tasks.json
 .idea/
@@ -52,3 +79,4 @@ runtime/
 # OS files
 Thumbs.db
 .DS_Store
+Desktop.ini

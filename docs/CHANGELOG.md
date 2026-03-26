@@ -4,8 +4,28 @@
 
 ## 版本说明
 
-- 当前版本：v0.5.7
+- 当前版本：v0.5.8
 - 版本策略：当前采用轻量语义化版本记录文档与功能阶段，不严格绑定发布包。
+
+---
+
+## v0.5.8 - 2026-03-26
+
+### 新增功能
+- 无
+
+### Bug 修复
+- 无
+
+### 文档与工程
+- **开发骨架接入**：以 `project-owned` 方式接入 `AIProjectSkeleton` 的 canonical 文档、repo hygiene 脚本、CI 工作流、配置样例和 prompt 模板，形成稳定的协作入口，文件：`docs/START_HERE.md`、`docs/current_status.md`、`docs/backlog.md`、`docs/roadmap.md`、`scripts/*.ps1`、`.github/workflows/repo-hygiene.yml`
+- **最小自动化冒烟测试**：新增 `tests/test_smoke_baseline.py` 与 `scripts/run_smoke_tests.ps1`，覆盖入口路径注入、配置加载、runtime 隔离与翻译核心基础无网络行为
+- **测试隔离能力**：`src/config.py` 与 `src/settings_manager.py` 新增 `EASY_TRANSLATION_RUNTIME_DIR` 环境变量支持，使自动化测试可在临时 runtime 目录中运行而不污染本地数据
+- **文档体系调整**：原业务实现深度文档保留并迁移为 `docs/app_developer_guide.md`，README、测试与归档提示同步改到新路径
+
+### 遗留问题
+- B-002：`_clear_external_selection` Right 键在富文本编辑器中移动光标
+- B-003：多显示器下窗口居中基于主屏而非鼠标所在屏
 
 ---
 

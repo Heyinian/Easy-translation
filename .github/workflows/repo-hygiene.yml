@@ -1,0 +1,20 @@
+name: repo-hygiene
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  repo-hygiene:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run repository hygiene checks
+        shell: pwsh
+        run: |
+          ./scripts/run_repo_hygiene_checks.ps1

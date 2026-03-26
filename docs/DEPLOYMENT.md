@@ -7,7 +7,7 @@
 - 文档索引：DOCS_INDEX.md
 - 项目总览：../README.md
 - 快速上手：QUICKSTART.md
-- 开发者归档：DEVELOPER_GUIDE.md
+- 开发者归档：app_developer_guide.md
 - 测试说明：TESTING.md
 - 发布说明：RELEASE_NOTES.md
 - 变更记录：CHANGELOG.md

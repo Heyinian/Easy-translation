@@ -1,0 +1,12 @@
+{
+  "approved": true,
+  "reason": "Replace the canonical document skeleton because the current layout is blocking handoff quality.",
+  "approved_by": "maintainer_name",
+  "requested_by": "requester_name",
+  "scope": [
+    "docs/START_HERE.md",
+    "docs/backlog.md",
+    "docs/roadmap.md"
+  ],
+  "created_on": "2026-03-24"
+}

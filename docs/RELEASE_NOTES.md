@@ -11,6 +11,21 @@
 - 测试说明：TESTING.md
 - 变更记录：CHANGELOG.md
 
+## v0.5.8
+
+发布时间：2026-03-26
+
+### 本版本重点
+
+- 接入 project-owned 开发骨架
+- 新增最小本地 automated smoke baseline
+- 补齐 repo hygiene 脚本与基础协作文档入口
+
+### 用户可见变化
+
+1. 无直接 UI 或翻译能力变化
+2. 对维护者而言，仓库具备了更清晰的开发入口和更稳定的基础验证流程
+
 ## v0.5.2
 
 发布时间：2026-03-21
@@ -131,6 +146,6 @@
 如果你是：
 
 1. 普通使用者：优先看 README.md
-2. 新开发者：优先看 QUICKSTART.md 和 DEVELOPER_GUIDE.md
+2. 新开发者：优先看 QUICKSTART.md 和 app_developer_guide.md
 3. 测试人员：优先看 TESTING.md
 4. 部署人员：优先看 DEPLOYMENT.md

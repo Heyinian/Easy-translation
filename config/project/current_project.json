@@ -1,0 +1,15 @@
+{
+  "project_name": "Easy-translation",
+  "project_id": "easy_translation",
+  "task_prefix": "ET",
+  "project_mission": "Provide a Windows desktop translation tool with clipboard translation, OCR, external input replacement, and multi-provider support.",
+  "current_version": "v0.5.8",
+  "current_phase": "Phase 2 - Pre-Release Stabilization",
+  "first_goal": "Adopt AIProjectSkeleton governance without disrupting the existing desktop application workflow.",
+  "next_recommended_step": "Build a minimal automated smoke-check baseline for startup, config loading, and repo hygiene verification.",
+  "initialized_from": "AIProjectSkeleton",
+  "initialized_on": "2026-03-26",
+  "bootstrap_finalized": true,
+  "bootstrap_assets_retained": false,
+  "bootstrap_mode": "project-owned"
+}

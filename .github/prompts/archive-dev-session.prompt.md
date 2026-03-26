@@ -105,9 +105,9 @@ agent: agent
 
 ---
 
-## 第六步：按需更新 docs/DEVELOPER_GUIDE.md
+## 第六步：按需更新 docs/app_developer_guide.md
 
-阅读 [docs/DEVELOPER_GUIDE.md](../docs/DEVELOPER_GUIDE.md) 后判断：
+阅读 [docs/app_developer_guide.md](../docs/app_developer_guide.md) 后判断：
 
 **需要更新（满足任一条件）：**
 - 新增或删除了模块、类、关键公共方法
@@ -136,6 +136,6 @@ agent: agent
     · Bug 表：已移除 {已修复 ID 列表 | 无} / 已追加 {新 Bug ID 列表 | 无}
     · 功能表：已移除 {已实现 ID 列表 | 无} / 已追加 {新规划 ID 列表 | 无}
 - CHANGELOG.md 已追加：v{新版本号} 版本块（{N} 条修复 / {M} 条新增 / {K} 条文档工程）
-- DEVELOPER_GUIDE.md：{已更新（{具体章节}）| 本次无需更新（{原因}）}
+- app_developer_guide.md：{已更新（{具体章节}）| 本次无需更新（{原因}）}
 - 本次遗留 Bug：{B-NNN 列表 | 无}
 ```

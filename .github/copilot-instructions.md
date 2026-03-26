@@ -72,7 +72,7 @@
 - ❌ 删除历史版本块
 - ❌ 合并多个版本的改动到一个版本块
 
-#### 步骤 4：按需更新 `docs/DEVELOPER_GUIDE.md`
+#### 步骤 4：按需更新 `docs/app_developer_guide.md`
 
 **触发条件（满足任一即需更新）：**
 - 新增或删除了模块/类/关键方法
@@ -93,7 +93,7 @@
 - 版本号：v{新版本号}（{变更前版本} → {变更后版本}）
 - PROJECT_STATUS.md 已更新：版本号 / 日期 / Bug 表 / 功能表
 - CHANGELOG.md 已新增：v{新版本号} 版本块（{N} 条修复 / {M} 条新增）
-- DEVELOPER_GUIDE.md：{已更新 | 本次无需更新（原因）}
+- app_developer_guide.md：{已更新 | 本次无需更新（原因）}
 - 本次遗留 Bug：{B-NNN 列表 | 无}
 ```
 
@@ -123,7 +123,7 @@
 |------|------|
 | `docs/PROJECT_STATUS.md` | 当前状态快照（AI 接入首选入口） |
 | `docs/CHANGELOG.md` | 版本历史（只追加） |
-| `docs/DEVELOPER_GUIDE.md` | 模块详解 + 避坑清单 |
+| `docs/app_developer_guide.md` | 模块详解 + 避坑清单 |
 | `docs/TESTING.md` | 测试清单 |
 | `docs/DEPLOYMENT.md` | 部署说明 |
 

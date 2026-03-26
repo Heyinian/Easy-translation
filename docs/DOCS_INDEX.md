@@ -6,6 +6,9 @@
 
 ### 0. AI 开发者 / 异地接手者（首选）
 
+- [START_HERE.md](START_HERE.md) — 当前开发骨架总入口
+- [current_status.md](current_status.md) — 当前经过验证的开发状态
+- [backlog.md](backlog.md) — 当前任务、优先级与状态
 - [PROJECT_STATUS.md](PROJECT_STATUS.md) — 当前版本、Bug 列表、架构速查、避坑清单
 
 ### 1. 首次查看项目
@@ -18,7 +21,7 @@
 
 ### 3. 接手代码实现与架构
 
-- [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md)
+- [app_developer_guide.md](app_developer_guide.md)
 
 ### 4. 部署、打包、分发
 
@@ -54,7 +57,7 @@
 
 ### 想了解设置、热键、三击空格、翻译链路
 
-- [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md)
+- [app_developer_guide.md](app_developer_guide.md)
 
 ### 想知道如何打包成 exe
 
@@ -80,7 +83,8 @@
 |------|----------|----------|
 | PROJECT_STATUS.md | 每次改动后更新当前版本号 / Bug 状态 | 每次发版必须同步 |
 | CHANGELOG.md | 每个版本追加一个版本块，**不覆盖历史** | 每次发版必须同步 |
-| DEVELOPER_GUIDE.md | 架构或模块职责发生变化时更新 | 按需 |
+| START_HERE.md / current_status.md / backlog.md / roadmap.md | 开发骨架状态或协作边界变化时更新 | 按需 |
+| app_developer_guide.md | 架构或模块职责发生变化时更新 | 按需 |
 | TESTING.md | 新增功能或回归重点变化时更新 | 按需 |
 | DEPLOYMENT.md | 依赖或部署流程变化时更新 | 按需 |
 | RELEASE_NOTES.md | 每个版本追加用户可见变化 | 每次发版 |
@@ -97,7 +101,7 @@
 1. 递增 patch 版本号（`PROJECT_STATUS.md` → `当前版本`）
 2. 在 `CHANGELOG.md` 顶部新增版本块（不修改历史块）
 3. 更新 `PROJECT_STATUS.md` 的 Bug 表和功能规划表
-4. 按需更新 `DEVELOPER_GUIDE.md`
+4. 按需更新 `app_developer_guide.md`
 5. 输出"归档确认清单"
 
 **快速触发**：在 Copilot Chat 中输入 `/archive-dev-session` 可一键执行完整归档流程。
@@ -111,7 +115,7 @@
 
 1. README.md 是总入口
 2. QUICKSTART.md 是最短启动路径
-3. DEVELOPER_GUIDE.md 是开发交接文档
+3. app_developer_guide.md 是应用实现交接文档
 4. DEPLOYMENT.md 是部署与分发说明
 5. TESTING.md 是测试与验收文档
 6. RELEASE_NOTES.md 是面向使用者的版本说明
