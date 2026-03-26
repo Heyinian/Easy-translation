@@ -26,7 +26,7 @@
 
 ## One-Line Project State
 
-`Easy-translation` 当前处于 `Phase 2 - Pre-Release Stabilization`，工作版本为 `v0.5.8`。仓库已经以 `project-owned` 方式接入 `AIProjectSkeleton` 的治理骨架，同时保留原有桌面应用实现与产品级技术文档。
+`Easy-translation` 当前处于 `Phase 2 - Pre-Release Stabilization`，工作版本为 `v0.5.9`。仓库已经以 `project-owned` 方式接入 `AIProjectSkeleton` 的治理骨架，同时保留原有桌面应用实现与产品级技术文档。
 
 ## Current Source Of Truth
 

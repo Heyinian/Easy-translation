@@ -8,7 +8,7 @@ Last updated: `2026-03-26`
 
 ## Current Working Version
 
-- `v0.5.8`
+- `v0.5.9`
 
 ## Verified Reality
 

@@ -4,8 +4,27 @@
 
 ## 版本说明
 
-- 当前版本：v0.5.8
+- 当前版本：v0.5.9
 - 版本策略：当前采用轻量语义化版本记录文档与功能阶段，不严格绑定发布包。
+
+---
+
+## v0.5.9 - 2026-03-26
+
+### 新增功能
+- 无
+
+### Bug 修复
+- 无
+
+### 文档与工程
+- **AI 翻译规划入库**：新增 `docs/ai_translation_profile_plan.md`，把 AI 场景翻译 profile、`BYOK` 兼容 provider 与可选候选词悬浮窗的方案、边界和 token 成本约束收敛为正式设计文档
+- **任务体系扩展**：`docs/backlog.md` 与 `docs/PROJECT_STATUS.md` 新增 `ET-FEAT-002`、`ET-FEAT-003`、`ET-FEAT-004` 及对应规划项，覆盖 AI profile、`BYOK` provider 和候选词悬浮窗
+- **发布检查点刷新**：同步 `README.md`、`docs/current_status.md`、`docs/RELEASE_NOTES.md`、`docs/RELEASE_DRAFT.md`、`config/project/current_project.json` 等版本落点，并重新生成 Windows release 包
+
+### 遗留问题
+- B-002：`_clear_external_selection` Right 键在富文本编辑器中移动光标
+- B-003：多显示器下窗口居中基于主屏而非鼠标所在屏
 
 ---
 
